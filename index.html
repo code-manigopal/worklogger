@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WLOG</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ===== Sign-in screen ===== -->
+<div id="signinScreen" class="signin-screen">
+  <div class="signin-card">
+    <div class="spark" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <h1>WLOG</h1>
+    <p>Your shifts and work notes, kept in your own Google Drive.</p>
+    <button id="signInBtn" class="btn btn-primary btn-large">Sign in with Google</button>
+    <p id="authError" class="auth-error" hidden></p>
+  </div>
+</div>
+
+<!-- ===== App shell ===== -->
+<div id="app" class="app" hidden>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="spark small" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+      <span class="brand-name">WLOG</span>
+    </div>
+    <div class="topbar-right">
+      <img id="userAvatar" class="avatar" alt="">
+      <span id="userName" class="user-name"></span>
+      <button id="themeToggleBtn" class="icon-btn" title="Toggle dark mode">☾</button>
+      <button id="settingsBtn" class="icon-btn" title="Pay settings">⚙</button>
+      <button id="signOutBtn" class="icon-btn" title="Sign out">⏻</button>
+    </div>
+  </header>
+
+  <main class="main">
+
+    <div id="reminderBanner" class="reminder-banner" hidden></div>
+    <div id="syncBanner" class="sync-banner" hidden>
+      <span class="sync-text"></span>
+      <button id="syncRetryBtn" class="btn btn-ghost btn-sm">Retry sync</button>
+    </div>
+
+    <section class="summary-strip-wrap">
+      <div class="period-toggle">
+        <button type="button" data-period="week">Week</button>
+        <button type="button" data-period="payPeriod" class="active">Pay period</button>
+        <button type="button" data-period="month">Month</button>
+      </div>
+      <span id="periodLabel" class="period-label"></span>
+    </section>
+
+    <section class="summary-strip" id="summaryStrip">
+      <div class="summary-tile">
+        <span class="summary-label">Hours</span>
+        <span class="summary-value" id="sumHours">0.0</span>
+      </div>
+      <div class="summary-tile">
+        <span class="summary-label">Regular / OT</span>
+        <span class="summary-value" id="sumRegOt">0.0 / 0.0</span>
+      </div>
+      <div class="summary-tile">
+        <span class="summary-label">Est. gross pay</span>
+        <span class="summary-value" id="sumGross">$0.00</span>
+      </div>
+      <div class="summary-tile">
+        <span class="summary-label">Est. net pay</span>
+        <span class="summary-value" id="sumNet">$0.00</span>
+      </div>
+    </section>
+    <div id="ytdLine" class="ytd-line"></div>
+
+    <section class="calendar-section">
+      <div class="calendar-toolbar">
+        <div class="month-nav">
+          <button id="prevMonth" class="icon-btn" aria-label="Previous month">‹</button>
+          <h2 id="monthLabel">Month Year</h2>
+          <button id="nextMonth" class="icon-btn" aria-label="Next month">›</button>
+        </div>
+        <div class="toolbar-actions">
+          <button id="viewLogsBtn" class="btn btn-outline">View Logs</button>
+          <button id="logWorkBtn" class="btn btn-outline">Log Work</button>
+          <button id="addShiftBtn" class="btn btn-primary">+ Add Shift</button>
+        </div>
+      </div>
+
+      <div class="calendar-grid" id="calendarWeekdays">
+        <div class="weekday">Sun</div><div class="weekday">Mon</div><div class="weekday">Tue</div>
+        <div class="weekday">Wed</div><div class="weekday">Thu</div><div class="weekday">Fri</div><div class="weekday">Sat</div>
+      </div>
+      <div class="calendar-grid" id="calendarDays"></div>
+    </section>
+
+    <section class="export-strip">
+      <span class="export-label">Export</span>
+      <button id="exportShiftsCsv" class="btn btn-ghost">Shifts CSV</button>
+      <button id="exportLogsCsv" class="btn btn-ghost">Work Log CSV</button>
+      <button id="exportPdf" class="btn btn-ghost">Formatted PDF</button>
+      <button id="exportAnnualPdf" class="btn btn-ghost">Annual Summary (Tax)</button>
+    </section>
+
+  </main>
+</div>
+
+<!-- ===== Tooltip ===== -->
+<div id="dayTooltip" class="day-tooltip" hidden></div>
+
+<!-- ===== Add/Edit Shift modal ===== -->
+<div id="shiftModal" class="modal-overlay" hidden>
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalShiftTitle">Add Shift</h3>
+      <button class="icon-btn modal-close" data-close="shiftModal">✕</button>
+    </div>
+    <form id="shiftForm" class="modal-body">
+      <input type="hidden" id="shiftEditId">
+      <label>Date
+        <input type="date" id="shiftDate" required>
+      </label>
+      <div class="field-row">
+        <label>Start time
+          <input type="time" id="shiftStart" required>
+        </label>
+        <label>End time
+          <input type="time" id="shiftEnd" required>
+        </label>
+      </div>
+      <div class="field-row">
+        <label>Unpaid meal break (minutes)
+          <input type="number" id="shiftBreak" min="0" step="5">
+        </label>
+        <label>Employer
+          <select id="shiftEmployer"></select>
+        </label>
+      </div>
+      <label>Shift type</label>
+      <div class="radio-row">
+        <label class="radio-pill"><input type="radio" name="shiftType" value="Normal" checked> Normal</label>
+        <label class="radio-pill"><input type="radio" name="shiftType" value="Overtime"> Overtime</label>
+      </div>
+      <p id="shiftFormError" class="form-error" hidden></p>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" data-close="shiftModal">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="shiftSubmitBtn">Add Shift</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== Add/Edit Log modal ===== -->
+<div id="logModal" class="modal-overlay" hidden>
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalLogTitle">Log Work</h3>
+      <button class="icon-btn modal-close" data-close="logModal">✕</button>
+    </div>
+    <form id="logForm" class="modal-body">
+      <input type="hidden" id="logEditId">
+      <input type="hidden" id="logExistingPhotos">
+      <div class="field-row">
+        <label>Shift date
+          <input type="date" id="logDate" required>
+        </label>
+        <label>Time
+          <input type="time" id="logTime" required>
+        </label>
+      </div>
+
+      <div class="field-row">
+        <label>Task category
+          <select id="logCategory" required></select>
+        </label>
+        <label>Employer
+          <select id="logEmployer"></select>
+        </label>
+      </div>
+
+      <div id="logActivities" class="checkbox-grid"></div>
+
+      <label>Notes
+        <textarea id="logNotes" rows="4" placeholder="Detailed work notes for the day..."></textarea>
+      </label>
+
+      <label>Photos
+        <input type="file" id="logPhotos" accept="image/*" multiple>
+      </label>
+      <p id="logPhotoHint" class="form-hint" hidden></p>
+      <div id="photoPreviewList" class="photo-preview-list"></div>
+
+      <p id="logFormError" class="form-error" hidden></p>
+      <p id="logFormStatus" class="form-status" hidden></p>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" data-close="logModal">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="logSubmitBtn">Save Log</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== Day Detail modal ===== -->
+<div id="dayDetailModal" class="modal-overlay" hidden>
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <h3 id="dayDetailTitle">Day</h3>
+      <button class="icon-btn modal-close" data-close="dayDetailModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <h4 class="section-heading">Shifts</h4>
+      <div id="dayDetailShifts"></div>
+      <h4 class="section-heading">Work log</h4>
+      <div id="dayDetailLogs"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Logs browser modal ===== -->
+<div id="logsModal" class="modal-overlay" hidden>
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <h3>Work Logs</h3>
+      <button class="icon-btn modal-close" data-close="logsModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-row">
+        <label>Search
+          <input type="text" id="logsSearchInput" placeholder="Search notes or activities...">
+        </label>
+        <label>Category
+          <select id="logsFilterCategory"></select>
+        </label>
+      </div>
+      <div class="field-row">
+        <label>From
+          <input type="date" id="logsFilterFrom">
+        </label>
+        <label>To
+          <input type="date" id="logsFilterTo">
+        </label>
+      </div>
+      <table class="logs-table">
+        <thead><tr><th>Date</th><th>Category</th><th>Activities</th><th>Notes</th></tr></thead>
+        <tbody id="logsTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Settings modal ===== -->
+<div id="settingsModal" class="modal-overlay" hidden>
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Pay Settings</h3>
+      <button class="icon-btn modal-close" data-close="settingsModal">✕</button>
+    </div>
+    <form id="settingsForm" class="modal-body">
+      <label>Base hourly rate ($)
+        <input type="number" id="cfgRate" step="0.01" min="0" required>
+      </label>
+      <div class="field-row">
+        <label>CPP deduction (%)
+          <input type="number" id="cfgCpp" step="0.01" min="0" required>
+        </label>
+        <label>EI deduction (%)
+          <input type="number" id="cfgEi" step="0.01" min="0" required>
+        </label>
+      </div>
+      <label>Overtime multiplier
+        <input type="number" id="cfgOtMult" step="0.1" min="1" value="1.5" required>
+      </label>
+      <div class="field-row">
+        <label>Pay period start date
+          <input type="date" id="cfgPayAnchor" required>
+        </label>
+        <label>Pay period length (days)
+          <input type="number" id="cfgPayLength" min="1" step="1" required>
+        </label>
+      </div>
+      <p class="form-hint">CPP/EI are applied as flat percentages you set here for estimation only — check current CRA rates directly, this isn't payroll advice. Pay period start should be any known start-of-period date (a Sunday, usually); the app works out which window "today" falls in from there.</p>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" data-close="settingsModal">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Settings</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== Photo lightbox ===== -->
+<div id="lightbox" class="modal-overlay lightbox-overlay" hidden data-close="lightbox">
+  <img id="lightboxImg" class="lightbox-img" alt="Photo">
+  <p id="lightboxError" class="lightbox-error" hidden>Couldn't load this photo. It may still be uploading, or the Drive connection dropped — try again in a moment.</p>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/csv.js"></script>
+<script src="js/drive.js"></script>
+<script src="js/pay.js"></script>
+<script src="js/sync.js"></script>
+<script src="js/theme.js"></script>
+<script src="js/reminders.js"></script>
+<script src="js/calendar.js"></script>
+<script src="js/daydetail.js"></script>
+<script src="js/logsview.js"></script>
+<script src="js/modals.js"></script>
+<script src="js/export.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
