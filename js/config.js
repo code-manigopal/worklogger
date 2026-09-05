@@ -2,13 +2,22 @@
 // EDIT THIS FILE for your own setup.
 // ===========================================================
 const CONFIG = {
-  // From Google Cloud Console → APIs & Services → Credentials.
-  // See README.md for the exact steps.
-  GOOGLE_CLIENT_ID: "394825366106-sbr1vkqhhsgqpch93naoabrkamr83qo1.apps.googleusercontent.com",
+  // Firebase project config (Project Settings → General → Your apps → Web app).
+  // Using Firebase Authentication instead of raw Google Identity Services —
+  // same pattern as SplitFree — for a more reliable popup sign-in flow.
+  FIREBASE_CONFIG: {
+    apiKey: "AIzaSyC0Vvm6H_xHg6XDF33xW0kzgQUOw7fk6VI",
+    authDomain: "wlog-507616.firebaseapp.com",
+    projectId: "wlog-507616",
+    storageBucket: "wlog-507616.firebasestorage.app",
+    messagingSenderId: "394825366106",
+    appId: "1:394825366106:web:54888b1dd7a65178ca7663"
+  },
 
   // Only requests access to files this app itself creates —
-  // it can never see or touch the rest of your Drive.
-  DRIVE_SCOPE: "https://www.googleapis.com/auth/drive.file openid email profile",
+  // it can never see or touch the rest of your Drive. Requested
+  // as an extra scope on top of Firebase's default sign-in.
+  DRIVE_SCOPE: "https://www.googleapis.com/auth/drive.file",
 
   ROOT_FOLDER_NAME: "WLOG",
   PHOTOS_FOLDER_NAME: "Photos",

@@ -4,27 +4,39 @@ A static site (no backend) that signs you in with Google and stores
 everything — shifts, logs, photos — in a `WLOG` folder in your
 own Google Drive. Built to be hosted on GitHub Pages.
 
-## 1. Google Cloud setup (one-time, ~5 min)
+## 1. Firebase setup (one-time, ~5 min)
 
-1. Go to https://console.cloud.google.com/ and create a new project
-   (or reuse one).
-2. **APIs & Services → Library** → search "Google Drive API" → **Enable**.
-3. **APIs & Services → OAuth consent screen**:
-   - User type: External (unless you have a Workspace org).
-   - Fill in app name, your email, etc.
-   - Scopes: add `.../auth/drive.file` (and `email`, `profile`, `openid`).
-   - Add yourself as a test user if the app stays in "Testing" mode
-     (fine for personal use — no need to publish it).
-4. **APIs & Services → Credentials → Create Credentials → OAuth client ID**:
-   - Application type: **Web application**.
-   - Authorized JavaScript origins: add your GitHub Pages URL, e.g.
-     `https://code-manigopal.github.io`
-     (no path, no trailing slash).
-   - No redirect URI needed — this uses the token-client flow.
-5. Copy the generated **Client ID** into `js/config.js`:
-   ```js
-   GOOGLE_CLIENT_ID: "xxxxxxxx.apps.googleusercontent.com",
-   ```
+WLOG signs in via **Firebase Authentication** (Google popup sign-in) —
+the same pattern as SplitFree. This still runs on top of a Google
+Cloud project, but Firebase manages the sign-in popup and OAuth
+client for you, which is far more reliable than wiring one up by hand.
+
+1. Go to https://console.firebase.google.com/ → **Add project**.
+   - If you already created a Google Cloud project for WLOG, pick
+     "Add Firebase to an existing Google Cloud project" and select
+     it — this keeps the Drive API you already enabled.
+2. Once the project is created: **Build → Authentication → Get started**.
+3. **Sign-in method** tab → **Add new provider → Google → Enable → Save**.
+4. **Authentication → Settings → Authorized domains** → **Add domain**
+   → enter your GitHub Pages domain exactly, e.g.
+   `code-manigopal.github.io` (domain only, no `https://`, no path).
+5. Register a web app: **Project settings (gear icon) → General →
+   Your apps → Add app → Web (</>together;)**. Name it WLOG, no need
+   to set up Hosting. It'll show a `firebaseConfig` object — copy the
+   whole thing.
+6. Paste those values into `js/config.js` → `FIREBASE_CONFIG`
+   (`apiKey`, `authDomain`, `projectId`, `storageBucket`,
+   `messagingSenderId`, `appId`).
+7. Make sure the **Google Drive API** is still enabled and your
+   Walmart email is still on the **Test users** list under
+   **APIs & Services → OAuth consent screen** in that same Google
+   Cloud project — Firebase's Google sign-in still goes through that
+   project's consent screen when requesting the Drive scope, so both
+   of those still apply.
+8. Because Drive access is a "sensitive" scope, Google will show an
+   **"unverified app"** warning on first sign-in. That's expected for
+   a personal-use app — click **Advanced → Go to WLOG (unsafe)** to
+   continue. This is safe; it's your own app on your own project.
 
 ## 2. Deploy to GitHub Pages
 

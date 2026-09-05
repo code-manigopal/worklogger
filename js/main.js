@@ -74,14 +74,7 @@ const App = {
     });
     document.getElementById("syncRetryBtn").addEventListener("click", () => Sync.flush());
     Calendar.render();
-
-    // Google Identity Services script loads async — wait for it.
-    const waitForGoogle = setInterval(() => {
-      if (window.google && google.accounts) {
-        clearInterval(waitForGoogle);
-        Auth.init();
-      }
-    }, 100);
+    Auth.init();
   }
 };
 
