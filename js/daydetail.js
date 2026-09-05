@@ -22,10 +22,11 @@ const DayDetail = {
       const row = document.createElement("div");
       row.className = "detail-row";
       const hrs = Pay.hoursForShift(s).toFixed(1);
+      const timeLabel = s.start_time ? `${s.start_time}–${s.end_time}` : `${hrs}h logged (no clock times)`;
       row.innerHTML = `
         <div class="detail-row-main">
-          <b>${s.start_time}–${s.end_time}</b> · ${s.type} · ${hrs}h paid${s.employer ? " · " + s.employer : ""}
-          <div class="detail-row-sub">${s.break_minutes || 0} min unpaid break</div>
+          <b>${timeLabel}</b> · ${s.type} · ${hrs}h paid${s.employer ? " · " + s.employer : ""}
+          <div class="detail-row-sub">${s.break_minutes ? s.break_minutes + " min unpaid break" : ""}</div>
         </div>`;
       const actions = document.createElement("div");
       actions.className = "detail-row-actions";
@@ -47,7 +48,7 @@ const DayDetail = {
       row.className = "detail-row";
       row.innerHTML = `
         <div class="detail-row-main">
-          <b>${l.time || ""} · ${l.category}</b>${l.employer ? " · " + l.employer : ""}
+          <b>${l.hours_worked ? l.hours_worked + "h · " : ""}${l.category}</b>${l.employer ? " · " + l.employer : ""}
           <div class="detail-row-sub">${l.activities || ""}</div>
           ${l.notes ? `<div class="detail-row-sub">${l.notes}</div>` : ""}
         </div>`;

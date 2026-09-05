@@ -25,8 +25,8 @@ const CONFIG = {
   LOG_FILE_NAME: "work_log.csv",
   CONFIG_FILE_NAME: "config.json",
 
-  SHIFTS_HEADER: ["id", "date", "start_time", "end_time", "break_minutes", "type", "employer", "created_at"],
-  LOG_HEADER: ["id", "date", "time", "category", "activities", "notes", "photo_links", "employer", "logged_at"],
+  SHIFTS_HEADER: ["id", "date", "start_time", "end_time", "break_minutes", "hours", "type", "employer", "created_at"],
+  LOG_HEADER: ["id", "date", "hours_worked", "category", "activities", "notes", "photo_links", "employer", "logged_at"],
 
   // Unpaid meal break, subtracted from shift duration before any pay
   // calculation. Pre-filled in the Add Shift modal — override per shift.

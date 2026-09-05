@@ -91,7 +91,8 @@ const Calendar = {
     let html = `<b>${dateStr}</b>`;
     shifts.forEach(s => {
       const paidHrs = Pay.hoursForShift(s).toFixed(1);
-      html += `<br>${s.start_time}–${s.end_time} (${s.type}) · ${paidHrs}h paid${s.employer ? " · " + s.employer : ""}`;
+      const timeLabel = s.start_time ? `${s.start_time}–${s.end_time} (${s.type})` : `${s.type} shift`;
+      html += `<br>${timeLabel} · ${paidHrs}h paid${s.employer ? " · " + s.employer : ""}`;
     });
     logs.forEach(l => {
       html += `<br><b>${l.category || ""}</b>: ${l.activities || ""}`;

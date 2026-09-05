@@ -158,7 +158,7 @@ const Modals = {
     try {
       if (editId) {
         const rows = App.state.shifts.map(s => s.id === editId
-          ? { ...s, date, start_time: start, end_time: end, break_minutes: breakMinutes, employer, type }
+          ? { ...s, date, start_time: start, end_time: end, break_minutes: breakMinutes, hours: "", employer, type }
           : s);
         App.state.shifts = await Drive.writeShiftsRows(rows);
         App.toast("Shift updated.");
@@ -167,7 +167,7 @@ const Modals = {
       } else {
         const row = {
           id: crypto.randomUUID(),
-          date, start_time: start, end_time: end, break_minutes: breakMinutes, type, employer,
+          date, start_time: start, end_time: end, break_minutes: breakMinutes, hours: "", type, employer,
           created_at: new Date().toISOString()
         };
         try {
@@ -205,7 +205,7 @@ const Modals = {
 
     if (existing) {
       document.getElementById("logDate").value = existing.date;
-      document.getElementById("logTime").value = existing.time || "";
+      document.getElementById("logHours").value = existing.hours_worked || "";
       document.getElementById("logCategory").value = this.categoryKeyForLabel(existing.category);
       document.getElementById("logEmployer").value = existing.employer || CONFIG.EMPLOYERS[0];
       document.getElementById("logNotes").value = existing.notes || "";
@@ -217,6 +217,7 @@ const Modals = {
       hint.hidden = !count;
     } else {
       document.getElementById("logDate").value = Calendar.fmt(new Date());
+      document.getElementById("logHours").value = "";
       document.getElementById("logEmployer").value = CONFIG.EMPLOYERS[0];
       document.getElementById("logExistingPhotos").value = "";
       document.getElementById("logPhotoHint").hidden = true;
@@ -245,7 +246,7 @@ const Modals = {
 
     const editId = document.getElementById("logEditId").value;
     const date = document.getElementById("logDate").value;
-    const time = document.getElementById("logTime").value;
+    const hoursWorked = document.getElementById("logHours").value;
     const categoryKey = document.getElementById("logCategory").value;
     const categoryLabel = CONFIG.CATEGORIES[categoryKey].label;
     const employer = document.getElementById("logEmployer").value;
@@ -277,9 +278,10 @@ const Modals = {
       if (editId) {
         statusEl.textContent = "Saving changes...";
         const rows = App.state.logs.map(l => l.id === editId
-          ? { ...l, date, time, category: categoryLabel, activities: activities.join("; "), notes, employer, photo_links: photoLinks.join("; ") }
+          ? { ...l, date, hours_worked: hoursWorked, category: categoryLabel, activities: activities.join("; "), notes, employer, photo_links: photoLinks.join("; ") }
           : l);
         App.state.logs = await Drive.writeLogsRows(rows);
+        await this.syncHoursToShift(date, employer, hoursWorked);
         App.toast("Log updated.");
         this.close("logModal");
         DayDetail.currentDate === date && DayDetail.render();
@@ -287,7 +289,7 @@ const Modals = {
         statusEl.textContent = "Saving log...";
         const row = {
           id: crypto.randomUUID(),
-          date, time, category: categoryLabel, employer,
+          date, hours_worked: hoursWorked, category: categoryLabel, employer,
           activities: activities.join("; "),
           notes,
           photo_links: photoLinks.join("; "),
@@ -295,6 +297,7 @@ const Modals = {
         };
         try {
           App.state.logs = await Drive.appendLog(row);
+          await this.syncHoursToShift(date, employer, hoursWorked);
           App.toast("Work log saved.");
         } catch (err) {
           App.state.logs.push(row);
@@ -304,12 +307,37 @@ const Modals = {
         this.close("logModal");
       }
       Calendar.render();
+      App.refreshSummary();
     } catch (err) {
       errEl.textContent = "Couldn't save photos/log: " + err.message;
       errEl.hidden = false;
     } finally {
       submitBtn.disabled = false;
       statusEl.hidden = true;
+    }
+  },
+
+  // Entering hours in Log Work feeds straight into pay: update the
+  // matching shift if one exists for this date+employer, or create a
+  // minimal one (hours only, no clock times) if it doesn't.
+  async syncHoursToShift(date, employer, hoursWorked) {
+    if (hoursWorked === "" || hoursWorked === null || isNaN(Number(hoursWorked))) return;
+    try {
+      const existingShift = App.state.shifts.find(s => s.date === date && s.employer === employer);
+      let rows;
+      if (existingShift) {
+        rows = App.state.shifts.map(s => s === existingShift ? { ...s, hours: hoursWorked } : s);
+      } else {
+        rows = [...App.state.shifts, {
+          id: crypto.randomUUID(),
+          date, start_time: "", end_time: "", break_minutes: "", hours: hoursWorked,
+          type: "Normal", employer, created_at: new Date().toISOString()
+        }];
+      }
+      App.state.shifts = await Drive.writeShiftsRows(rows);
+    } catch (e) {
+      // Non-fatal — the log itself is already saved; just note the hours didn't sync.
+      App.toast("Log saved, but couldn't update hours: " + e.message);
     }
   },
 

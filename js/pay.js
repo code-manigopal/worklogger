@@ -10,6 +10,9 @@ const Pay = {
   ONTARIO_WEEKLY_OT_THRESHOLD: 44,
 
   hoursForShift(shift) {
+    if (shift.hours !== undefined && shift.hours !== "" && !isNaN(Number(shift.hours))) {
+      return Number(shift.hours);
+    }
     const [sh, sm] = shift.start_time.split(":").map(Number);
     const [eh, em] = shift.end_time.split(":").map(Number);
     let start = sh * 60 + sm;

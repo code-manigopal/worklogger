@@ -28,7 +28,7 @@ const LogsView = {
     const from = document.getElementById("logsFilterFrom").value;
     const to = document.getElementById("logsFilterTo").value;
 
-    let rows = App.state.logs.slice().sort((a, b) => b.date.localeCompare(a.date) || b.time.localeCompare(a.time));
+    let rows = App.state.logs.slice().sort((a, b) => b.date.localeCompare(a.date));
     if (catFilter) rows = rows.filter(r => r.category === catFilter);
     if (from) rows = rows.filter(r => r.date >= from);
     if (to) rows = rows.filter(r => r.date <= to);
@@ -46,7 +46,7 @@ const LogsView = {
       const tr = document.createElement("tr");
       tr.className = "logs-table-row";
       tr.innerHTML = `
-        <td>${r.date}<br><span class="muted">${r.time || ""}</span></td>
+        <td>${r.date}<br><span class="muted">${r.hours_worked ? r.hours_worked + "h" : ""}</span></td>
         <td>${r.category}</td>
         <td>${r.activities || ""}</td>
         <td>${(r.notes || "").length > 80 ? r.notes.slice(0, 80) + "…" : (r.notes || "")}</td>`;

@@ -56,8 +56,8 @@ const Exporter = {
 
     doc.autoTable({
       startY: afterShiftsY + 4,
-      head: [["Date", "Time", "Category", "Activities", "Notes"]],
-      body: App.state.logs.map(l => [l.date, l.time, l.category, l.activities, l.notes]),
+      head: [["Date", "Hours", "Category", "Activities", "Notes"]],
+      body: App.state.logs.map(l => [l.date, l.hours_worked || "", l.category, l.activities, l.notes]),
       styles: { fontSize: 8, cellWidth: "wrap" },
       columnStyles: { 4: { cellWidth: 60 } },
       headStyles: { fillColor: [255, 194, 32], textColor: [4, 30, 66] }

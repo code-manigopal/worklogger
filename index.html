@@ -171,8 +171,8 @@
         <label>Shift date
           <input type="date" id="logDate" required>
         </label>
-        <label>Time
-          <input type="time" id="logTime" required>
+        <label>Hours worked
+          <input type="number" id="logHours" min="0" step="0.25" placeholder="e.g. 7.5">
         </label>
       </div>
 
@@ -186,6 +186,8 @@
       </div>
 
       <div id="logActivities" class="checkbox-grid"></div>
+
+      <p class="form-hint">If a shift already exists for this date, entering hours here updates it. If not, it creates one — either way, this feeds straight into your weekly hours and pay.</p>
 
       <label>Notes
         <textarea id="logNotes" rows="4" placeholder="Detailed work notes for the day..."></textarea>
