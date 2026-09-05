@@ -51,10 +51,12 @@ const Calendar = {
       const weekIndex = Math.floor(new Date(weekStart + "T00:00:00").getTime() / (7 * 86400000));
       const weekStripeClass = weekIndex % 2 === 0 ? "week-even" : "week-odd";
       const isSelected = dateStr >= selectedRange.start && dateStr <= selectedRange.end;
+      const isPayDate = Pay.isPayDate(dateStr, payConfig);
       cell.className = "day-cell " + weekStripeClass +
         (isOutside ? " outside" : "") +
         (dateStr === todayStr ? " today" : "") +
-        (isSelected ? " selected-" + selectedPeriod : "");
+        (isSelected ? " selected-" + selectedPeriod : "") +
+        (isPayDate ? " pay-date" : "");
       cell.dataset.date = dateStr;
 
       const num = document.createElement("div");
@@ -84,6 +86,13 @@ const Calendar = {
         const tag = document.createElement("span");
         tag.className = "tag tag-logged";
         tag.textContent = "Logged";
+        tags.appendChild(tag);
+      }
+
+      if (isPayDate) {
+        const tag = document.createElement("span");
+        tag.className = "tag tag-payday";
+        tag.textContent = "Payday";
         tags.appendChild(tag);
       }
 

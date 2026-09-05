@@ -55,16 +55,15 @@ const CONFIG = {
     cppRate: 0,
     eiRate: 0,
     otMultiplier: 1.5,
-    // Your actual first day on the job — used to work out which
-    // biweekly (or configurable length) pay period any given date
-    // falls into, and to show your first (possibly partial) period
-    // correctly rather than guessing its length.
+    // Your actual first day on the job — purely informational
+    // (tenure/reference), doesn't affect pay period math.
     hireDate: "",
-    // Only needed if your hire date landed you a short first period
-    // (very common for new hires) — the Saturday your first FULL
-    // period actually started. Leave blank if your first period was
-    // already a full one; the app then just snaps hireDate forward
-    // to the next Saturday.
+    // A confirmed real pay period start date, pulled from an actual
+    // stub — this is what pay periods are actually calculated from.
+    // Your employer's cycle is fixed and independent of your hire
+    // date, so this can't be reliably derived from date math alone.
+    // Leave blank only if you don't have a stub yet; the app then
+    // falls back to a rough guess (hireDate snapped to the next Saturday).
     firstFullPeriodStart: "",
     payPeriodLengthDays: 14,
     // Your usual schedule — which weekdays you normally work, and the

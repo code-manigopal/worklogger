@@ -52,6 +52,22 @@ const Pay = {
     return anchor;
   },
 
+  // A payday recurs a fixed number of days (default 7, matching a
+  // typical one-week processing lag) after each period's end. Works
+  // for any period, past or future, not just the one currently selected.
+  PAY_DATE_LAG_DAYS: 7,
+
+  isPayDate(dateStr, payConfig) {
+    const anchor = this.getPayPeriodAnchor(payConfig);
+    const lengthDays = Number(payConfig.payPeriodLengthDays) || 14;
+    const msPerDay = 86400000;
+    const firstPayDate = new Date(anchor.getTime() + (lengthDays - 1 + this.PAY_DATE_LAG_DAYS) * msPerDay);
+    const d = new Date(dateStr + "T00:00:00");
+    if (d < firstPayDate) return false;
+    const offset = Math.round((d - firstPayDate) / msPerDay);
+    return offset % lengthDays === 0;
+  },
+
   groupShiftsByWorkWeek(shifts) {
     const weeks = {};
     shifts.forEach(s => {
@@ -154,16 +170,6 @@ const Pay = {
       const anchor = this.getPayPeriodAnchor(payConfig);
       const lengthDays = Number(payConfig.payPeriodLengthDays) || 14;
       const msPerDay = 86400000;
-
-      // Before the first full period starts, you're in a short partial
-      // period — model it as its own correctly-bounded range rather
-      // than pretending it's a full 14-day block.
-      if (payConfig.hireDate && refDate < anchor) {
-        const hire = new Date(payConfig.hireDate + "T00:00:00");
-        const end = new Date(anchor.getTime() - msPerDay);
-        return { start: this.fmt(hire), end: this.fmt(end), label: "First pay period (partial)" };
-      }
-
       const diffDays = Math.floor((refDate - anchor) / msPerDay);
       const periodsElapsed = Math.floor(diffDays / lengthDays);
       const start = new Date(anchor.getTime() + periodsElapsed * lengthDays * msPerDay);
