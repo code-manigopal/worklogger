@@ -7,7 +7,8 @@ const App = {
     shifts: [],
     logs: [],
     payConfig: null,
-    summaryPeriod: "payPeriod" // 'week' | 'payPeriod' | 'month'
+    summaryPeriod: "payPeriod", // 'week' | 'payPeriod' | 'month'
+    refDate: new Date() // which date the Week/Pay Period/Month tiles are centered on
   },
 
   async onSignedIn() {
@@ -31,7 +32,7 @@ const App = {
 
   refreshSummary() {
     const cfg = this.state.payConfig || CONFIG.DEFAULT_PAY_CONFIG;
-    const split = Pay.summarizeEarnedVsScheduledForPeriod(this.state.shifts, this.state.logs, cfg, this.state.summaryPeriod);
+    const split = Pay.summarizeEarnedVsScheduledForPeriod(this.state.shifts, this.state.logs, cfg, this.state.summaryPeriod, this.state.refDate);
     document.getElementById("periodLabel").textContent = split.range.label;
     document.getElementById("sumHours").textContent =
       `${split.earned.totalHours.toFixed(1)} / ${split.scheduled.totalHours.toFixed(1)}`;
@@ -40,11 +41,21 @@ const App = {
     document.getElementById("sumGross").textContent = "$" + split.earned.netPay.toFixed(2);
     document.getElementById("sumNet").textContent = "$" + split.scheduled.netPay.toFixed(2);
 
-    const ytdSplit = Pay.summarizeEarnedVsScheduledForPeriod(this.state.shifts, this.state.logs, cfg, "ytd");
+    // Year-to-date always reflects the real current date, not whatever
+    // month/day is being browsed — it's a fixed real-world figure.
+    const ytdSplit = Pay.summarizeEarnedVsScheduledForPeriod(this.state.shifts, this.state.logs, cfg, "ytd", new Date());
     const ytdTotalHours = ytdSplit.earned.totalHours + ytdSplit.scheduled.totalHours;
     const ytdTotalNet = ytdSplit.earned.netPay + ytdSplit.scheduled.netPay;
     document.getElementById("ytdLine").textContent =
       `Year to date: ${ytdTotalHours.toFixed(1)} h (${ytdSplit.earned.totalHours.toFixed(1)} earned) · $${ytdTotalNet.toFixed(2)} est. net`;
+  },
+
+  // Called when the calendar navigates to a new month or a specific day
+  // gets clicked — the Week/Pay Period/Month tiles follow whatever date
+  // you're actually looking at, not always "today".
+  setRefDate(date) {
+    this.state.refDate = date;
+    this.refreshSummary();
   },
 
   setSummaryPeriod(period) {

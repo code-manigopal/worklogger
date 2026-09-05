@@ -83,7 +83,10 @@ const Calendar = {
         cell.addEventListener("mousemove", (e) => this.moveTooltip(e));
         cell.addEventListener("mouseleave", () => this.hideTooltip());
       }
-      cell.addEventListener("click", () => DayDetail.open(dateStr));
+      cell.addEventListener("click", () => {
+        App.setRefDate(new Date(dateStr + "T00:00:00"));
+        DayDetail.open(dateStr);
+      });
 
       grid.appendChild(cell);
     }
@@ -119,10 +122,12 @@ const Calendar = {
   prevMonth() {
     this.viewDate.setMonth(this.viewDate.getMonth() - 1);
     this.render();
+    App.setRefDate(new Date(this.viewDate.getFullYear(), this.viewDate.getMonth(), 1));
   },
 
   nextMonth() {
     this.viewDate.setMonth(this.viewDate.getMonth() + 1);
     this.render();
+    App.setRefDate(new Date(this.viewDate.getFullYear(), this.viewDate.getMonth(), 1));
   }
 };
