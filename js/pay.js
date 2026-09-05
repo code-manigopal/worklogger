@@ -25,15 +25,17 @@ const Pay = {
     }
     const rate = Number(payConfig.hourlyRate) || 0;
     const otMult = Number(payConfig.otMultiplier) || 1.5;
+    const nightPremium = Number(payConfig.nightPremium) || 0;
     const regularPay = regularHours * rate;
     const overtimePay = overtimeHours * rate * otMult;
-    const grossPay = regularPay + overtimePay;
+    const nightPremiumPay = (regularHours + overtimeHours) * nightPremium;
+    const grossPay = regularPay + overtimePay + nightPremiumPay;
     const deductionRate = ((Number(payConfig.cppRate) || 0) + (Number(payConfig.eiRate) || 0)) / 100;
     const deductions = grossPay * deductionRate;
     const netPay = grossPay - deductions;
     return {
       totalHours: regularHours + overtimeHours,
-      regularHours, overtimeHours, regularPay, overtimePay, grossPay, deductions, netPay
+      regularHours, overtimeHours, regularPay, overtimePay, nightPremiumPay, grossPay, deductions, netPay
     };
   },
 

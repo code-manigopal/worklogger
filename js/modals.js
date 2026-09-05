@@ -309,6 +309,7 @@ const Modals = {
   async openSettingsModal() {
     const cfg = App.state.payConfig || CONFIG.DEFAULT_PAY_CONFIG;
     document.getElementById("cfgRate").value = cfg.hourlyRate;
+    document.getElementById("cfgNightPremium").value = cfg.nightPremium || 0;
     document.getElementById("cfgCpp").value = cfg.cppRate;
     document.getElementById("cfgEi").value = cfg.eiRate;
     document.getElementById("cfgOtMult").value = cfg.otMultiplier;
@@ -321,6 +322,7 @@ const Modals = {
     e.preventDefault();
     const cfg = {
       hourlyRate: Number(document.getElementById("cfgRate").value),
+      nightPremium: Number(document.getElementById("cfgNightPremium").value),
       cppRate: Number(document.getElementById("cfgCpp").value),
       eiRate: Number(document.getElementById("cfgEi").value),
       otMultiplier: Number(document.getElementById("cfgOtMult").value),

@@ -51,6 +51,7 @@ const CONFIG = {
 
   DEFAULT_PAY_CONFIG: {
     hourlyRate: 0,
+    nightPremium: 0,
     cppRate: 0,
     eiRate: 0,
     otMultiplier: 1.5,

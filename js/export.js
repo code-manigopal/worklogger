@@ -38,7 +38,7 @@ const Exporter = {
       14, 32
     );
     doc.text(
-      `Est. gross: $${summary.grossPay.toFixed(2)}  |  Est. deductions: $${summary.deductions.toFixed(2)}  |  Est. net: $${summary.netPay.toFixed(2)}`,
+      `Est. gross: $${summary.grossPay.toFixed(2)} (incl. $${summary.nightPremiumPay.toFixed(2)} night premium)  |  Est. deductions: $${summary.deductions.toFixed(2)}  |  Est. net: $${summary.netPay.toFixed(2)}`,
       14, 38
     );
 
