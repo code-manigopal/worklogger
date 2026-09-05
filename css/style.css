@@ -25,6 +25,12 @@
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
+
+/* The browser's own [hidden] rule loses to any author CSS that sets
+   display on the same element (e.g. .modal-overlay's display:flex) —
+   this forces hidden to always actually hide, everywhere, no exceptions. */
+[hidden] { display: none !important; }
+
 body {
   background: var(--surface-muted);
   color: var(--ink);
@@ -96,10 +102,19 @@ h1, h2, h3 { margin: 0; color: var(--wm-blue-dark); }
 }
 .summary-tile {
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
-  padding: 14px 16px;
+  padding: 14px 16px; transition: background 0.15s ease, border-color 0.15s ease;
 }
 .summary-label { display: block; font-size: 12px; color: var(--ink-soft); margin-bottom: 6px; }
 .summary-value { display: block; font-size: 20px; font-weight: 700; color: var(--wm-blue-dark); }
+
+/* Distinct color per period mode so it's obvious at a glance which
+   view you're looking at. */
+.summary-strip.mode-week .summary-tile { border-color: rgba(0, 113, 206, 0.35); background: rgba(0, 113, 206, 0.05); }
+.summary-strip.mode-payPeriod .summary-tile { border-color: rgba(232, 174, 0, 0.45); background: rgba(255, 194, 32, 0.10); }
+.summary-strip.mode-month .summary-tile { border-color: rgba(46, 125, 50, 0.35); background: rgba(46, 125, 50, 0.06); }
+:root[data-theme="dark"] .summary-strip.mode-week .summary-tile { background: rgba(0, 113, 206, 0.14); }
+:root[data-theme="dark"] .summary-strip.mode-payPeriod .summary-tile { background: rgba(255, 194, 32, 0.12); }
+:root[data-theme="dark"] .summary-strip.mode-month .summary-tile { background: rgba(46, 125, 50, 0.14); }
 
 /* ---------- Calendar ---------- */
 .calendar-section {
@@ -122,8 +137,23 @@ h1, h2, h3 { margin: 0; color: var(--wm-blue-dark); }
   padding: 6px 8px; background: var(--surface); cursor: default; position: relative;
   display: flex; flex-direction: column; gap: 4px;
 }
+.day-cell.week-even { background: rgba(0, 113, 206, 0.11); }
+.day-cell.week-odd { background: rgba(255, 194, 32, 0.16); }
 .day-cell.outside { opacity: 0.35; }
+.day-cell.outside.selected-week, .day-cell.outside.selected-payPeriod, .day-cell.outside.selected-month {
+  opacity: 0.85;
+}
 .day-cell.today { border-color: var(--wm-blue); box-shadow: inset 0 0 0 1px var(--wm-blue); }
+
+/* Highlights every day in the Week/Pay Period/Month currently shown in
+   the summary tiles above — updates when you click a date or switch
+   the mode toggle, so it's always clear what the tiles are summarizing. */
+.day-cell.selected-week { background: rgba(0, 113, 206, 0.32) !important; box-shadow: inset 0 0 0 2px var(--wm-blue); }
+.day-cell.selected-payPeriod { background: rgba(255, 194, 32, 0.38) !important; box-shadow: inset 0 0 0 2px var(--wm-yellow-dark); }
+.day-cell.selected-month { background: rgba(46, 125, 50, 0.28) !important; box-shadow: inset 0 0 0 2px var(--ok); }
+.day-cell.selected-week.today, .day-cell.selected-payPeriod.today, .day-cell.selected-month.today {
+  box-shadow: inset 0 0 0 2px var(--wm-blue-dark);
+}
 .day-num { font-size: 13px; font-weight: 600; color: var(--ink); }
 .day-tags { display: flex; flex-wrap: wrap; gap: 4px; }
 .tag {
@@ -203,6 +233,22 @@ h1, h2, h3 { margin: 0; color: var(--wm-blue-dark); }
   flex-direction: row !important; align-items: center; gap: 8px !important;
   font-weight: 500; color: var(--ink); border: 1px solid var(--line);
   border-radius: var(--radius-sm); padding: 8px 10px; cursor: pointer;
+}
+.checkbox-grid label.activity-all {
+  grid-column: 1 / -1; font-weight: 700; border-color: var(--wm-blue);
+  background: rgba(0, 113, 206, 0.06);
+}
+
+.settings-divider { border: none; border-top: 1px solid var(--line); margin: 4px 0; }
+.weekday-toggle { display: flex; gap: 6px; flex-wrap: wrap; }
+.weekday-toggle label {
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line); border-radius: 20px; padding: 8px 12px;
+  font-size: 13px; font-weight: 600; cursor: pointer; color: var(--ink-soft);
+}
+.weekday-toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
+.weekday-toggle label:has(input:checked) {
+  border-color: var(--wm-blue); background: var(--wm-blue); color: #fff;
 }
 
 .photo-preview-list { display: flex; flex-wrap: wrap; gap: 8px; }
