@@ -89,6 +89,17 @@ const Calendar = {
 
       cell.appendChild(tags);
 
+      const editBtn = document.createElement("button");
+      editBtn.type = "button";
+      editBtn.className = "day-edit-btn";
+      editBtn.title = "View/edit this day";
+      editBtn.textContent = "✎";
+      editBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        DayDetail.open(dateStr);
+      });
+      cell.appendChild(editBtn);
+
       if (dayShifts.length || dayLogs.length) {
         cell.addEventListener("mouseenter", (e) => this.showTooltip(e, dateStr, dayShifts, dayLogs));
         cell.addEventListener("mousemove", (e) => this.moveTooltip(e));
@@ -96,7 +107,6 @@ const Calendar = {
       }
       cell.addEventListener("click", () => {
         App.setRefDate(new Date(dateStr + "T00:00:00"));
-        DayDetail.open(dateStr);
       });
 
       grid.appendChild(cell);
