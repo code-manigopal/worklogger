@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>WLOG — Connection Test</title>
+<style>
+  body { font-family: -apple-system, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 20px; background: #0B0E12; color: #EDEFF2; }
+  h1 { color: #FFC220; }
+  button { font-size: 16px; padding: 12px 24px; border-radius: 24px; border: none; background: #FFC220; cursor: pointer; font-weight: 700; }
+  button:hover { background: #E8AE00; }
+  .row { margin: 16px 0; padding: 14px; border-radius: 8px; background: #161B21; border: 1px solid #262C33; }
+  .ok { border-color: #2E7D32; }
+  .fail { border-color: #C1121F; }
+  .pending { border-color: #0071CE; }
+  pre { white-space: pre-wrap; word-break: break-all; font-size: 12.5px; color: #9AA4AE; margin: 6px 0 0; }
+  .label { font-weight: 700; }
+</style>
+</head>
+<body>
+
+<h1>WLOG — Connection Test</h1>
+<p>This page does nothing but sign in and try to touch your Drive. Every result — success or failure — shows up below, no DevTools needed.</p>
+
+<button id="testBtn">Run the test</button>
+
+<div id="results"></div>
+
+<script>
+  const CONFIG = {
+    FIREBASE_CONFIG: {
+      apiKey: "AIzaSyC0Vvm6H_xHg6XDF33xW0kzgQUOw7fk6VI",
+      authDomain: "wlog-507616.firebaseapp.com",
+      projectId: "wlog-507616",
+      storageBucket: "wlog-507616.firebasestorage.app",
+      messagingSenderId: "394825366106",
+      appId: "1:394825366106:web:54888b1dd7a65178ca7663"
+    },
+    DRIVE_SCOPE: "https://www.googleapis.com/auth/drive.file"
+  };
+
+  function addRow(label) {
+    const el = document.createElement("div");
+    el.className = "row pending";
+    el.innerHTML = `<span class="label">${label}</span> — running...`;
+    document.getElementById("results").appendChild(el);
+    return el;
+  }
+  function pass(el, text) {
+    el.className = "row ok";
+    el.innerHTML = `<span class="label">✅ ${el.dataset.label}</span><pre>${text}</pre>`;
+  }
+  function fail(el, text) {
+    el.className = "row fail";
+    el.innerHTML = `<span class="label">❌ ${el.dataset.label}</span><pre>${text}</pre>`;
+  }
+
+  document.getElementById("testBtn").addEventListener("click", async () => {
+    document.getElementById("results").innerHTML = "";
+    document.getElementById("testBtn").disabled = true;
+
+    // Step 1: load Firebase SDK
+    const step1 = addRow("Load Firebase SDK"); step1.dataset.label = "Load Firebase SDK";
+    let initializeApp, getAuth, GoogleAuthProvider, signInWithPopup;
+    try {
+      ({ initializeApp } = await import("https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js"));
+      ({ getAuth, GoogleAuthProvider, signInWithPopup } = await import("https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js"));
+      pass(step1, "Firebase SDK modules loaded from gstatic.com.");
+    } catch (e) {
+      fail(step1, "Could not load the Firebase SDK itself: " + e.message);
+      document.getElementById("testBtn").disabled = false;
+      return;
+    }
+
+    // Step 2: initialize Firebase app
+    const step2 = addRow("Initialize Firebase app"); step2.dataset.label = "Initialize Firebase app";
+    let fbApp, auth, provider;
+    try {
+      fbApp = initializeApp(CONFIG.FIREBASE_CONFIG);
+      auth = getAuth(fbApp);
+      provider = new GoogleAuthProvider();
+      provider.addScope(CONFIG.DRIVE_SCOPE);
+      provider.setCustomParameters({ prompt: "consent" });
+      pass(step2, "Firebase app initialized with project: " + CONFIG.FIREBASE_CONFIG.projectId);
+    } catch (e) {
+      fail(step2, e.message);
+      document.getElementById("testBtn").disabled = false;
+      return;
+    }
+
+    // Step 3: sign in with popup
+    const step3 = addRow("Google sign-in popup"); step3.dataset.label = "Google sign-in popup";
+    let accessToken, userEmail;
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      accessToken = credential?.accessToken;
+      userEmail = result.user.email;
+      if (!accessToken) throw new Error("Signed in, but Google did not return a Drive access token. The Drive scope may not have been granted — check the consent screen you approved.");
+      pass(step3, "Signed in as " + userEmail + "\nAccess token starts with: " + accessToken.slice(0, 20) + "...");
+    } catch (e) {
+      fail(step3, "Error code: " + (e.code || "none") + "\nMessage: " + e.message);
+      document.getElementById("testBtn").disabled = false;
+      return;
+    }
+
+    // Step 4: call the Drive API
+    const step4 = addRow("Call Google Drive API"); step4.dataset.label = "Call Google Drive API";
+    try {
+      const res = await fetch("https://www.googleapis.com/drive/v3/files?pageSize=1&fields=files(id,name)", {
+        headers: { Authorization: "Bearer " + accessToken }
+      });
+      const text = await res.text();
+      if (!res.ok) throw new Error("HTTP " + res.status + ": " + text);
+      pass(step4, "Drive API responded successfully:\n" + text);
+    } catch (e) {
+      fail(step4, e.message);
+      document.getElementById("testBtn").disabled = false;
+      return;
+    }
+
+    // Step 5: create a real test folder
+    const step5 = addRow("Create a test folder in your Drive"); step5.dataset.label = "Create a test folder in your Drive";
+    try {
+      const res = await fetch("https://www.googleapis.com/drive/v3/files?fields=id,name", {
+        method: "POST",
+        headers: { Authorization: "Bearer " + accessToken, "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "WLOG-connection-test", mimeType: "application/vnd.google-apps.folder" })
+      });
+      const text = await res.text();
+      if (!res.ok) throw new Error("HTTP " + res.status + ": " + text);
+      pass(step5, "Created a folder called 'WLOG-connection-test' in your Drive:\n" + text + "\n\nGo check your Drive — if it's there, EVERYTHING works end to end. You can delete this test folder afterward.");
+    } catch (e) {
+      fail(step5, e.message);
+    }
+
+    document.getElementById("testBtn").disabled = false;
+  });
+</script>
+</body>
+</html>
