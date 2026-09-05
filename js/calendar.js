@@ -33,6 +33,13 @@ const Calendar = {
       (logsByDate[l.date] = logsByDate[l.date] || []).push(l);
     });
 
+    // Which dates fall in the currently selected Week/Pay Period/Month —
+    // highlighted below so it's obvious what the summary tiles reflect.
+    const payConfig = App.state.payConfig || CONFIG.DEFAULT_PAY_CONFIG;
+    const selectedPeriod = App.state.summaryPeriod;
+    const selectedRefDate = App.state.refDate || new Date();
+    const selectedRange = Pay.getPeriodRange(selectedPeriod, payConfig, selectedRefDate);
+
     for (let i = 0; i < 42; i++) {
       const cellDate = new Date(gridStart);
       cellDate.setDate(gridStart.getDate() + i);
@@ -43,7 +50,11 @@ const Calendar = {
       const weekStart = Pay.getWorkWeekRange(cellDate).start;
       const weekIndex = Math.floor(new Date(weekStart + "T00:00:00").getTime() / (7 * 86400000));
       const weekStripeClass = weekIndex % 2 === 0 ? "week-even" : "week-odd";
-      cell.className = "day-cell " + weekStripeClass + (isOutside ? " outside" : "") + (dateStr === todayStr ? " today" : "");
+      const isSelected = dateStr >= selectedRange.start && dateStr <= selectedRange.end;
+      cell.className = "day-cell " + weekStripeClass +
+        (isOutside ? " outside" : "") +
+        (dateStr === todayStr ? " today" : "") +
+        (isSelected ? " selected-" + selectedPeriod : "");
       cell.dataset.date = dateStr;
 
       const num = document.createElement("div");
@@ -122,12 +133,10 @@ const Calendar = {
   prevMonth() {
     this.viewDate.setMonth(this.viewDate.getMonth() - 1);
     this.render();
-    App.setRefDate(new Date(this.viewDate.getFullYear(), this.viewDate.getMonth(), 1));
   },
 
   nextMonth() {
     this.viewDate.setMonth(this.viewDate.getMonth() + 1);
     this.render();
-    App.setRefDate(new Date(this.viewDate.getFullYear(), this.viewDate.getMonth(), 1));
   }
 };

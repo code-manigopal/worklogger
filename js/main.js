@@ -56,6 +56,7 @@ const App = {
   setRefDate(date) {
     this.state.refDate = date;
     this.refreshSummary();
+    Calendar.render();
   },
 
   setSummaryPeriod(period) {
@@ -67,6 +68,7 @@ const App = {
     strip.classList.remove("mode-week", "mode-payPeriod", "mode-month");
     strip.classList.add("mode-" + period);
     this.refreshSummary();
+    Calendar.render();
   },
 
   toast(message) {
