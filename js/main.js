@@ -31,17 +31,20 @@ const App = {
 
   refreshSummary() {
     const cfg = this.state.payConfig || CONFIG.DEFAULT_PAY_CONFIG;
-    const summary = Pay.summarizeForPeriod(this.state.shifts, cfg, this.state.summaryPeriod);
-    document.getElementById("periodLabel").textContent = summary.range.label;
-    document.getElementById("sumHours").textContent = summary.totalHours.toFixed(1);
+    const split = Pay.summarizeEarnedVsScheduledForPeriod(this.state.shifts, this.state.logs, cfg, this.state.summaryPeriod);
+    document.getElementById("periodLabel").textContent = split.range.label;
+    document.getElementById("sumHours").textContent =
+      `${split.earned.totalHours.toFixed(1)} / ${split.scheduled.totalHours.toFixed(1)}`;
     document.getElementById("sumRegOt").textContent =
-      `${summary.regularHours.toFixed(1)} / ${summary.overtimeHours.toFixed(1)}`;
-    document.getElementById("sumGross").textContent = "$" + summary.grossPay.toFixed(2);
-    document.getElementById("sumNet").textContent = "$" + summary.netPay.toFixed(2);
+      `${split.earned.regularHours.toFixed(1)} / ${split.earned.overtimeHours.toFixed(1)}`;
+    document.getElementById("sumGross").textContent = "$" + split.earned.netPay.toFixed(2);
+    document.getElementById("sumNet").textContent = "$" + split.scheduled.netPay.toFixed(2);
 
-    const ytd = Pay.summarizeForPeriod(this.state.shifts, cfg, "ytd");
+    const ytdSplit = Pay.summarizeEarnedVsScheduledForPeriod(this.state.shifts, this.state.logs, cfg, "ytd");
+    const ytdTotalHours = ytdSplit.earned.totalHours + ytdSplit.scheduled.totalHours;
+    const ytdTotalNet = ytdSplit.earned.netPay + ytdSplit.scheduled.netPay;
     document.getElementById("ytdLine").textContent =
-      `Year to date: ${ytd.totalHours.toFixed(1)} h · $${ytd.netPay.toFixed(2)} est. net`;
+      `Year to date: ${ytdTotalHours.toFixed(1)} h (${ytdSplit.earned.totalHours.toFixed(1)} earned) · $${ytdTotalNet.toFixed(2)} est. net`;
   },
 
   setSummaryPeriod(period) {

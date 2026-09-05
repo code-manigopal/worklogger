@@ -43,31 +43,77 @@ const Pay = {
     return weeks;
   },
 
-  summarize(shifts, payConfig) {
-    // Regular vs overtime is now determined automatically by weekly total
-    // hours crossing the 44-hour Ontario threshold — not by the per-shift
-    // Normal/Overtime tag, which is kept only as your own reference label.
-    let regularHours = 0, overtimeHours = 0;
+  // Splits each shift's hours into regular vs overtime portions, using the
+  // whole work week's chronological order — so the 44-hour threshold is
+  // applied correctly across ALL shifts in the week before any per-shift
+  // or per-bucket breakdown happens.
+  attributePerShift(shifts) {
     const weeks = this.groupShiftsByWorkWeek(shifts);
+    const results = [];
     Object.values(weeks).forEach(weekShifts => {
-      const weekTotal = weekShifts.reduce((sum, s) => sum + this.hoursForShift(s), 0);
-      regularHours += Math.min(weekTotal, this.ONTARIO_WEEKLY_OT_THRESHOLD);
-      overtimeHours += Math.max(0, weekTotal - this.ONTARIO_WEEKLY_OT_THRESHOLD);
+      const sorted = [...weekShifts].sort((a, b) =>
+        (a.date + (a.created_at || "")).localeCompare(b.date + (b.created_at || ""))
+      );
+      let cumulative = 0;
+      sorted.forEach(s => {
+        const hrs = this.hoursForShift(s);
+        const regularPortion = Math.max(0, Math.min(hrs, this.ONTARIO_WEEKLY_OT_THRESHOLD - cumulative));
+        const overtimePortion = hrs - regularPortion;
+        cumulative += hrs;
+        results.push({ shift: s, hours: hrs, regularHours: regularPortion, overtimeHours: overtimePortion });
+      });
     });
+    return results;
+  },
+
+  payForHours(regularHours, overtimeHours, totalHours, payConfig) {
     const rate = Number(payConfig.hourlyRate) || 0;
     const otMult = Number(payConfig.otMultiplier) || 1.5;
     const nightPremium = Number(payConfig.nightPremium) || 0;
     const regularPay = regularHours * rate;
     const overtimePay = overtimeHours * rate * otMult;
-    const nightPremiumPay = (regularHours + overtimeHours) * nightPremium;
+    const nightPremiumPay = totalHours * nightPremium;
     const grossPay = regularPay + overtimePay + nightPremiumPay;
     const deductionRate = ((Number(payConfig.cppRate) || 0) + (Number(payConfig.eiRate) || 0)) / 100;
     const deductions = grossPay * deductionRate;
-    const netPay = grossPay - deductions;
-    return {
-      totalHours: regularHours + overtimeHours,
-      regularHours, overtimeHours, regularPay, overtimePay, nightPremiumPay, grossPay, deductions, netPay
+    return { regularPay, overtimePay, nightPremiumPay, grossPay, deductions, netPay: grossPay - deductions };
+  },
+
+  summarize(shifts, payConfig) {
+    // Regular vs overtime is determined automatically by weekly total
+    // hours crossing the 44-hour Ontario threshold — not by the per-shift
+    // Normal/Overtime tag, which is kept only as your own reference label.
+    const attrs = this.attributePerShift(shifts);
+    let regularHours = 0, overtimeHours = 0;
+    attrs.forEach(a => { regularHours += a.regularHours; overtimeHours += a.overtimeHours; });
+    const totalHours = regularHours + overtimeHours;
+    const pay = this.payForHours(regularHours, overtimeHours, totalHours, payConfig);
+    return { totalHours, regularHours, overtimeHours, ...pay };
+  },
+
+  // Splits a summary into "earned" (dates that have a matching Log Work
+  // entry) and "scheduled" (shifts with no log yet — still an estimate).
+  // Uses the same per-shift weekly attribution as summarize(), so the two
+  // buckets always add up to exactly the combined total.
+  summarizeEarnedVsScheduled(shifts, logs, payConfig) {
+    const loggedDates = new Set(logs.map(l => l.date));
+    const attrs = this.attributePerShift(shifts);
+    const buckets = {
+      earned: { regularHours: 0, overtimeHours: 0 },
+      scheduled: { regularHours: 0, overtimeHours: 0 }
     };
+    attrs.forEach(a => {
+      const bucket = loggedDates.has(a.shift.date) ? buckets.earned : buckets.scheduled;
+      bucket.regularHours += a.regularHours;
+      bucket.overtimeHours += a.overtimeHours;
+    });
+    const result = {};
+    Object.entries(buckets).forEach(([key, b]) => {
+      const totalHours = b.regularHours + b.overtimeHours;
+      result[key] = { totalHours, regularHours: b.regularHours, overtimeHours: b.overtimeHours,
+        ...this.payForHours(b.regularHours, b.overtimeHours, totalHours, payConfig) };
+    });
+    return result;
   },
 
   // ---- Date-range helpers ----
@@ -110,6 +156,13 @@ const Pay = {
     const range = this.getPeriodRange(period, payConfig, refDate);
     const filtered = this.filterByRange(shifts, range.start, range.end);
     return { ...this.summarize(filtered, payConfig), range };
+  },
+
+  summarizeEarnedVsScheduledForPeriod(shifts, logs, payConfig, period, refDate = new Date()) {
+    const range = this.getPeriodRange(period, payConfig, refDate);
+    const filteredShifts = this.filterByRange(shifts, range.start, range.end);
+    const filteredLogs = this.filterByRange(logs, range.start, range.end);
+    return { ...this.summarizeEarnedVsScheduled(filteredShifts, filteredLogs, payConfig), range };
   },
 
   // Month-by-month breakdown for a given year, used by the annual PDF.
