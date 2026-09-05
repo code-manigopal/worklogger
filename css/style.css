@@ -25,6 +25,12 @@
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
+
+/* The browser's own [hidden] rule loses to any author CSS that sets
+   display on the same element (e.g. .modal-overlay's display:flex) —
+   this forces hidden to always actually hide, everywhere, no exceptions. */
+[hidden] { display: none !important; }
+
 body {
   background: var(--surface-muted);
   color: var(--ink);
