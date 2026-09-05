@@ -5,6 +5,10 @@
 // at canada.ca before relying on this.
 // ===========================================================
 const Pay = {
+  // Ontario ESA: overtime pay kicks in after 44 hours worked in a week —
+  // calculated weekly, not per shift or per day.
+  ONTARIO_WEEKLY_OT_THRESHOLD: 44,
+
   hoursForShift(shift) {
     const [sh, sm] = shift.start_time.split(":").map(Number);
     const [eh, em] = shift.end_time.split(":").map(Number);
@@ -16,13 +20,37 @@ const Pay = {
     return paidMinutes / 60;
   },
 
+  // Walmart's work week runs Saturday through Friday.
+  getWorkWeekRange(refDate) {
+    const day = refDate.getDay(); // 0=Sun ... 6=Sat
+    const daysSinceSaturday = (day + 1) % 7;
+    const start = new Date(refDate);
+    start.setDate(refDate.getDate() - daysSinceSaturday);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    return { start: this.fmt(start), end: this.fmt(end) };
+  },
+
+  groupShiftsByWorkWeek(shifts) {
+    const weeks = {};
+    shifts.forEach(s => {
+      const { start } = this.getWorkWeekRange(new Date(s.date + "T00:00:00"));
+      (weeks[start] = weeks[start] || []).push(s);
+    });
+    return weeks;
+  },
+
   summarize(shifts, payConfig) {
+    // Regular vs overtime is now determined automatically by weekly total
+    // hours crossing the 44-hour Ontario threshold — not by the per-shift
+    // Normal/Overtime tag, which is kept only as your own reference label.
     let regularHours = 0, overtimeHours = 0;
-    for (const s of shifts) {
-      const hrs = this.hoursForShift(s);
-      if (s.type === "Overtime") overtimeHours += hrs;
-      else regularHours += hrs;
-    }
+    const weeks = this.groupShiftsByWorkWeek(shifts);
+    Object.values(weeks).forEach(weekShifts => {
+      const weekTotal = weekShifts.reduce((sum, s) => sum + this.hoursForShift(s), 0);
+      regularHours += Math.min(weekTotal, this.ONTARIO_WEEKLY_OT_THRESHOLD);
+      overtimeHours += Math.max(0, weekTotal - this.ONTARIO_WEEKLY_OT_THRESHOLD);
+    });
     const rate = Number(payConfig.hourlyRate) || 0;
     const otMult = Number(payConfig.otMultiplier) || 1.5;
     const nightPremium = Number(payConfig.nightPremium) || 0;
@@ -52,10 +80,8 @@ const Pay = {
   // Returns {start, end, label} Date-strings for the period containing refDate.
   getPeriodRange(period, payConfig, refDate = new Date()) {
     if (period === "week") {
-      const day = refDate.getDay();
-      const start = new Date(refDate); start.setDate(refDate.getDate() - day);
-      const end = new Date(start); end.setDate(start.getDate() + 6);
-      return { start: this.fmt(start), end: this.fmt(end), label: "This week" };
+      const range = this.getWorkWeekRange(refDate);
+      return { start: range.start, end: range.end, label: "This week (Sat\u2013Fri)" };
     }
     if (period === "payPeriod") {
       const anchor = new Date(payConfig.payPeriodAnchor + "T00:00:00");
