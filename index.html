@@ -57,7 +57,7 @@
       <span id="periodLabel" class="period-label"></span>
     </section>
 
-    <section class="summary-strip" id="summaryStrip">
+    <section class="summary-strip mode-payPeriod" id="summaryStrip">
       <div class="summary-tile">
         <span class="summary-label">Hours (earned / scheduled)</span>
         <span class="summary-value" id="sumHours">0.0</span>
@@ -283,14 +283,17 @@
         <input type="number" id="cfgOtMult" step="0.1" min="1" value="1.5" required>
       </label>
       <div class="field-row">
-        <label>Pay period start date
-          <input type="date" id="cfgPayAnchor" required>
+        <label>Hire date
+          <input type="date" id="cfgHireDate">
         </label>
         <label>Pay period length (days)
           <input type="number" id="cfgPayLength" min="1" step="1" required>
         </label>
       </div>
-      <p class="form-hint">CPP/EI are applied as flat percentages you set here for estimation only — check current CRA rates directly, this isn't payroll advice. Pay period start should be any known start-of-period date (a Sunday, usually); the app works out which window "today" falls in from there.</p>
+      <label>First full pay period start (only fill in if your first period was short/partial)
+        <input type="date" id="cfgFirstFullPeriod">
+      </label>
+      <p class="form-hint">CPP/EI are applied as flat percentages you set here for estimation only — check current CRA rates directly, this isn't payroll advice. Hire date drives your pay periods; only set "First full pay period start" if your very first period was short (check your first pay stub for the real boundary — date math alone can't tell which week your employer's cycle actually starts on).</p>
 
       <hr class="settings-divider">
       <h4 class="section-heading">Regular shift schedule</h4>

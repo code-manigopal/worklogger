@@ -372,7 +372,8 @@ const Modals = {
     document.getElementById("cfgCpp").value = cfg.cppRate;
     document.getElementById("cfgEi").value = cfg.eiRate;
     document.getElementById("cfgOtMult").value = cfg.otMultiplier;
-    document.getElementById("cfgPayAnchor").value = cfg.payPeriodAnchor || CONFIG.DEFAULT_PAY_CONFIG.payPeriodAnchor;
+    document.getElementById("cfgHireDate").value = cfg.hireDate || "";
+    document.getElementById("cfgFirstFullPeriod").value = cfg.firstFullPeriodStart || "";
     document.getElementById("cfgPayLength").value = cfg.payPeriodLengthDays || CONFIG.DEFAULT_PAY_CONFIG.payPeriodLengthDays;
 
     const regularDays = cfg.regularDays || [];
@@ -394,7 +395,8 @@ const Modals = {
       cppRate: Number(document.getElementById("cfgCpp").value),
       eiRate: Number(document.getElementById("cfgEi").value),
       otMultiplier: Number(document.getElementById("cfgOtMult").value),
-      payPeriodAnchor: document.getElementById("cfgPayAnchor").value,
+      hireDate: document.getElementById("cfgHireDate").value,
+      firstFullPeriodStart: document.getElementById("cfgFirstFullPeriod").value,
       payPeriodLengthDays: Number(document.getElementById("cfgPayLength").value),
       regularDays: Array.from(document.querySelectorAll("#regularDaysToggle input:checked")).map(cb => Number(cb.value)),
       regularStart: document.getElementById("cfgRegularStart").value,

@@ -34,6 +34,24 @@ const Pay = {
     return { start: this.fmt(start), end: this.fmt(end) };
   },
 
+  // Determines the anchor Saturday that full pay periods are counted
+  // from. Uses firstFullPeriodStart directly if it's set (the one
+  // piece of ground truth date-math alone can't derive — a 14-day
+  // cycle has two possible phases a week apart, and only your actual
+  // pay stub tells you which one your employer uses). Otherwise falls
+  // back to snapping hireDate forward to the next Saturday.
+  getPayPeriodAnchor(payConfig) {
+    if (payConfig.firstFullPeriodStart) {
+      return new Date(payConfig.firstFullPeriodStart + "T00:00:00");
+    }
+    const raw = payConfig.hireDate ? new Date(payConfig.hireDate + "T00:00:00") : new Date("2026-01-03T00:00:00");
+    const day = raw.getDay();
+    const daysUntilSaturday = (6 - day + 7) % 7;
+    const anchor = new Date(raw);
+    anchor.setDate(raw.getDate() + daysUntilSaturday);
+    return anchor;
+  },
+
   groupShiftsByWorkWeek(shifts) {
     const weeks = {};
     shifts.forEach(s => {
@@ -133,9 +151,19 @@ const Pay = {
       return { start: range.start, end: range.end, label: "This week (Sat\u2013Fri)" };
     }
     if (period === "payPeriod") {
-      const anchor = new Date(payConfig.payPeriodAnchor + "T00:00:00");
+      const anchor = this.getPayPeriodAnchor(payConfig);
       const lengthDays = Number(payConfig.payPeriodLengthDays) || 14;
       const msPerDay = 86400000;
+
+      // Before the first full period starts, you're in a short partial
+      // period — model it as its own correctly-bounded range rather
+      // than pretending it's a full 14-day block.
+      if (payConfig.hireDate && refDate < anchor) {
+        const hire = new Date(payConfig.hireDate + "T00:00:00");
+        const end = new Date(anchor.getTime() - msPerDay);
+        return { start: this.fmt(hire), end: this.fmt(end), label: "First pay period (partial)" };
+      }
+
       const diffDays = Math.floor((refDate - anchor) / msPerDay);
       const periodsElapsed = Math.floor(diffDays / lengthDays);
       const start = new Date(anchor.getTime() + periodsElapsed * lengthDays * msPerDay);

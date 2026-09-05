@@ -55,9 +55,17 @@ const CONFIG = {
     cppRate: 0,
     eiRate: 0,
     otMultiplier: 1.5,
-    // Start date (Sunday recommended) of any known pay period, used
-    // to work out which 7/14-day window "today" falls into.
-    payPeriodAnchor: "2026-01-04",
+    // Your actual first day on the job — used to work out which
+    // biweekly (or configurable length) pay period any given date
+    // falls into, and to show your first (possibly partial) period
+    // correctly rather than guessing its length.
+    hireDate: "",
+    // Only needed if your hire date landed you a short first period
+    // (very common for new hires) — the Saturday your first FULL
+    // period actually started. Leave blank if your first period was
+    // already a full one; the app then just snaps hireDate forward
+    // to the next Saturday.
+    firstFullPeriodStart: "",
     payPeriodLengthDays: 14,
     // Your usual schedule — which weekdays you normally work, and the
     // default start/end/break for those. Used by "Generate shifts" to

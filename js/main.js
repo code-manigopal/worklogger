@@ -52,6 +52,9 @@ const App = {
     document.querySelectorAll(".period-toggle button").forEach(b => {
       b.classList.toggle("active", b.dataset.period === period);
     });
+    const strip = document.getElementById("summaryStrip");
+    strip.classList.remove("mode-week", "mode-payPeriod", "mode-month");
+    strip.classList.add("mode-" + period);
     this.refreshSummary();
   },
 

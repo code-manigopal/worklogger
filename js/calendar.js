@@ -40,7 +40,10 @@ const Calendar = {
       const isOutside = cellDate.getMonth() !== month;
 
       const cell = document.createElement("div");
-      cell.className = "day-cell" + (isOutside ? " outside" : "") + (dateStr === todayStr ? " today" : "");
+      const weekStart = Pay.getWorkWeekRange(cellDate).start;
+      const weekIndex = Math.floor(new Date(weekStart + "T00:00:00").getTime() / (7 * 86400000));
+      const weekStripeClass = weekIndex % 2 === 0 ? "week-even" : "week-odd";
+      cell.className = "day-cell " + weekStripeClass + (isOutside ? " outside" : "") + (dateStr === todayStr ? " today" : "");
       cell.dataset.date = dateStr;
 
       const num = document.createElement("div");
