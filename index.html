@@ -136,10 +136,13 @@
         <label>Unpaid meal break (minutes)
           <input type="number" id="shiftBreak" min="0" step="5">
         </label>
-        <label>Employer
-          <select id="shiftEmployer"></select>
+        <label>Or just enter hours worked
+          <input type="number" id="shiftQuickHours" min="0" step="0.25" placeholder="e.g. 7.5">
         </label>
       </div>
+      <label>Employer
+        <select id="shiftEmployer"></select>
+      </label>
       <label>Shift type</label>
       <div class="radio-row">
         <label class="radio-pill"><input type="radio" name="shiftType" value="Normal" checked> Normal</label>

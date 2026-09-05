@@ -42,6 +42,9 @@ const Modals = {
 
     document.getElementById("logCategory").addEventListener("change", () => this.renderActivityCheckboxes());
     document.getElementById("logPhotos").addEventListener("change", () => this.renderPhotoPreviews());
+    ["shiftQuickHours", "shiftStart", "shiftBreak"].forEach(id => {
+      document.getElementById(id).addEventListener("input", () => this.applyQuickHours());
+    });
 
     ["logsFilterCategory", "logsFilterFrom", "logsFilterTo"].forEach(id => {
       document.getElementById(id).addEventListener("change", () => LogsView.render());
@@ -106,8 +109,9 @@ const Modals = {
     document.getElementById("shiftSubmitBtn").textContent = existing ? "Save Changes" : "Add Shift";
 
     const dateInput = document.getElementById("shiftDate");
+    dateInput.removeAttribute("min"); // any date — past, today, or future — is fine now
+    document.getElementById("shiftQuickHours").value = "";
     if (existing) {
-      dateInput.removeAttribute("min"); // allow correcting a past shift
       dateInput.value = existing.date;
       document.getElementById("shiftStart").value = existing.start_time;
       document.getElementById("shiftEnd").value = existing.end_time;
@@ -115,12 +119,25 @@ const Modals = {
       document.getElementById("shiftEmployer").value = existing.employer || CONFIG.EMPLOYERS[0];
       document.querySelector(`input[name="shiftType"][value="${existing.type}"]`).checked = true;
     } else {
-      dateInput.min = Calendar.fmt(new Date());
       dateInput.value = Calendar.fmt(new Date());
       document.getElementById("shiftBreak").value = CONFIG.DEFAULT_BREAK_MINUTES;
       document.getElementById("shiftEmployer").value = CONFIG.EMPLOYERS[0];
     }
     this.open("shiftModal", { keepOpen: existing ? ["dayDetailModal"] : [] });
+  },
+
+  // Typing hours worked auto-fills the end time from start + hours + break,
+  // so you don't have to do the math for a shift you're logging after the fact.
+  applyQuickHours() {
+    const startVal = document.getElementById("shiftStart").value;
+    const hoursVal = parseFloat(document.getElementById("shiftQuickHours").value);
+    if (!startVal || isNaN(hoursVal)) return;
+    const breakMin = parseFloat(document.getElementById("shiftBreak").value) || 0;
+    const [sh, sm] = startVal.split(":").map(Number);
+    let totalMinutes = Math.round(sh * 60 + sm + hoursVal * 60 + breakMin) % (24 * 60);
+    const eh = Math.floor(totalMinutes / 60);
+    const em = totalMinutes % 60;
+    document.getElementById("shiftEnd").value = `${String(eh).padStart(2, "0")}:${String(em).padStart(2, "0")}`;
   },
 
   async submitShift(e) {
@@ -135,15 +152,6 @@ const Modals = {
     const breakMinutes = document.getElementById("shiftBreak").value || CONFIG.DEFAULT_BREAK_MINUTES;
     const employer = document.getElementById("shiftEmployer").value;
     const type = document.querySelector('input[name="shiftType"]:checked').value;
-
-    if (!editId) {
-      const today = Calendar.fmt(new Date());
-      if (date < today) {
-        errEl.textContent = "New shifts can only be added for today or a future date.";
-        errEl.hidden = false;
-        return;
-      }
-    }
 
     const submitBtn = document.getElementById("shiftSubmitBtn");
     submitBtn.disabled = true;
