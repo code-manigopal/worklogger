@@ -210,6 +210,22 @@ h1, h2, h3 { margin: 0; color: var(--wm-blue-dark); }
   font-weight: 500; color: var(--ink); border: 1px solid var(--line);
   border-radius: var(--radius-sm); padding: 8px 10px; cursor: pointer;
 }
+.checkbox-grid label.activity-all {
+  grid-column: 1 / -1; font-weight: 700; border-color: var(--wm-blue);
+  background: rgba(0, 113, 206, 0.06);
+}
+
+.settings-divider { border: none; border-top: 1px solid var(--line); margin: 4px 0; }
+.weekday-toggle { display: flex; gap: 6px; flex-wrap: wrap; }
+.weekday-toggle label {
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line); border-radius: 20px; padding: 8px 12px;
+  font-size: 13px; font-weight: 600; cursor: pointer; color: var(--ink-soft);
+}
+.weekday-toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
+.weekday-toggle label:has(input:checked) {
+  border-color: var(--wm-blue); background: var(--wm-blue); color: #fff;
+}
 
 .photo-preview-list { display: flex; flex-wrap: wrap; gap: 8px; }
 .photo-thumb { width: 56px; height: 56px; border-radius: 6px; object-fit: cover; border: 1px solid var(--line); }

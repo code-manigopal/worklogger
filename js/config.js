@@ -58,6 +58,14 @@ const CONFIG = {
     // Start date (Sunday recommended) of any known pay period, used
     // to work out which 7/14-day window "today" falls into.
     payPeriodAnchor: "2026-01-04",
-    payPeriodLengthDays: 14
+    payPeriodLengthDays: 14,
+    // Your usual schedule — which weekdays you normally work, and the
+    // default start/end/break for those. Used by "Generate shifts" to
+    // pre-fill upcoming days; each generated shift is a normal, fully
+    // editable/deletable entry afterward, not a locked-in rule.
+    regularDays: [],
+    regularStart: "",
+    regularEnd: "",
+    regularBreak: 30
   }
 };

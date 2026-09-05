@@ -39,6 +39,7 @@ const Modals = {
     document.getElementById("shiftForm").addEventListener("submit", (e) => this.submitShift(e));
     document.getElementById("logForm").addEventListener("submit", (e) => this.submitLog(e));
     document.getElementById("settingsForm").addEventListener("submit", (e) => this.submitSettings(e));
+    document.getElementById("generateShiftsBtn").addEventListener("click", () => this.generateRegularShifts());
 
     document.getElementById("logCategory").addEventListener("change", () => this.renderActivityCheckboxes());
     document.getElementById("logPhotos").addEventListener("change", () => this.renderPhotoPreviews());
@@ -83,15 +84,37 @@ const Modals = {
     const cat = CONFIG.CATEGORIES[key];
     const box = document.getElementById("logActivities");
     box.innerHTML = "";
+
+    const allLabel = document.createElement("label");
+    allLabel.className = "activity-all";
+    const allCb = document.createElement("input");
+    allCb.type = "checkbox";
+    allLabel.appendChild(allCb);
+    allLabel.appendChild(document.createTextNode("All"));
+    box.appendChild(allLabel);
+
+    const itemCbs = [];
     cat.items.forEach(item => {
       const label = document.createElement("label");
       const cb = document.createElement("input");
       cb.type = "checkbox";
+      cb.className = "activity-item";
       cb.value = item;
       if (preChecked && preChecked.includes(item)) cb.checked = true;
       label.appendChild(cb);
       label.appendChild(document.createTextNode(item));
       box.appendChild(label);
+      itemCbs.push(cb);
+    });
+
+    allCb.checked = itemCbs.length > 0 && itemCbs.every(cb => cb.checked);
+    allCb.addEventListener("change", () => {
+      itemCbs.forEach(cb => { cb.checked = allCb.checked; });
+    });
+    itemCbs.forEach(cb => {
+      cb.addEventListener("change", () => {
+        allCb.checked = itemCbs.every(c => c.checked);
+      });
     });
   },
 
@@ -250,7 +273,7 @@ const Modals = {
     const categoryKey = document.getElementById("logCategory").value;
     const categoryLabel = CONFIG.CATEGORIES[categoryKey].label;
     const employer = document.getElementById("logEmployer").value;
-    const activities = Array.from(document.querySelectorAll("#logActivities input:checked")).map(cb => cb.value);
+    const activities = Array.from(document.querySelectorAll("#logActivities input.activity-item:checked")).map(cb => cb.value);
     const notes = document.getElementById("logNotes").value.trim();
     const files = document.getElementById("logPhotos").files;
     const existingPhotoLinks = document.getElementById("logExistingPhotos").value;
@@ -351,6 +374,15 @@ const Modals = {
     document.getElementById("cfgOtMult").value = cfg.otMultiplier;
     document.getElementById("cfgPayAnchor").value = cfg.payPeriodAnchor || CONFIG.DEFAULT_PAY_CONFIG.payPeriodAnchor;
     document.getElementById("cfgPayLength").value = cfg.payPeriodLengthDays || CONFIG.DEFAULT_PAY_CONFIG.payPeriodLengthDays;
+
+    const regularDays = cfg.regularDays || [];
+    document.querySelectorAll("#regularDaysToggle input").forEach(cb => {
+      cb.checked = regularDays.includes(Number(cb.value));
+    });
+    document.getElementById("cfgRegularStart").value = cfg.regularStart || "";
+    document.getElementById("cfgRegularEnd").value = cfg.regularEnd || "";
+    document.getElementById("cfgRegularBreak").value = cfg.regularBreak || CONFIG.DEFAULT_BREAK_MINUTES;
+    document.getElementById("generateShiftsStatus").hidden = true;
     this.open("settingsModal");
   },
 
@@ -363,12 +395,71 @@ const Modals = {
       eiRate: Number(document.getElementById("cfgEi").value),
       otMultiplier: Number(document.getElementById("cfgOtMult").value),
       payPeriodAnchor: document.getElementById("cfgPayAnchor").value,
-      payPeriodLengthDays: Number(document.getElementById("cfgPayLength").value)
+      payPeriodLengthDays: Number(document.getElementById("cfgPayLength").value),
+      regularDays: Array.from(document.querySelectorAll("#regularDaysToggle input:checked")).map(cb => Number(cb.value)),
+      regularStart: document.getElementById("cfgRegularStart").value,
+      regularEnd: document.getElementById("cfgRegularEnd").value,
+      regularBreak: Number(document.getElementById("cfgRegularBreak").value) || CONFIG.DEFAULT_BREAK_MINUTES
     };
     await Drive.savePayConfig(cfg);
     App.state.payConfig = cfg;
     App.refreshSummary();
     this.close("settingsModal");
     App.toast("Pay settings saved.");
+  },
+
+  // Fills in upcoming shifts on your usual days, using the schedule set
+  // in Settings. Never touches a date that already has a shift — so
+  // editing or deleting a generated day afterward sticks; it won't be
+  // silently recreated unless you delete it and then generate over that
+  // same date range again.
+  async generateRegularShifts() {
+    const days = Array.from(document.querySelectorAll("#regularDaysToggle input:checked")).map(cb => Number(cb.value));
+    const start = document.getElementById("cfgRegularStart").value;
+    const end = document.getElementById("cfgRegularEnd").value;
+    const breakMin = Number(document.getElementById("cfgRegularBreak").value) || CONFIG.DEFAULT_BREAK_MINUTES;
+    const weeksAhead = Number(document.getElementById("cfgGenerateWeeks").value) || 4;
+    const statusEl = document.getElementById("generateShiftsStatus");
+
+    if (!days.length || !start || !end) {
+      statusEl.textContent = "Pick at least one day and set a start/end time first.";
+      statusEl.hidden = false;
+      return;
+    }
+
+    statusEl.textContent = "Generating...";
+    statusEl.hidden = false;
+
+    const existingDates = new Set(App.state.shifts.map(s => s.date));
+    const newRows = [];
+    const today = new Date();
+    for (let i = 0; i < weeksAhead * 7; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      if (!days.includes(d.getDay())) continue;
+      const dateStr = Calendar.fmt(d);
+      if (existingDates.has(dateStr)) continue;
+      newRows.push({
+        id: crypto.randomUUID(),
+        date: dateStr, start_time: start, end_time: end, break_minutes: breakMin, hours: "",
+        type: "Normal", employer: CONFIG.EMPLOYERS[0], created_at: new Date().toISOString()
+      });
+    }
+
+    if (!newRows.length) {
+      statusEl.textContent = "Nothing to add — those days are already covered in this window.";
+      return;
+    }
+
+    try {
+      const rows = [...App.state.shifts, ...newRows];
+      App.state.shifts = await Drive.writeShiftsRows(rows);
+      Calendar.render();
+      App.refreshSummary();
+      statusEl.textContent = `Added ${newRows.length} shift(s). You can edit or delete any of them individually from the calendar.`;
+      App.toast(`Added ${newRows.length} upcoming shift(s).`);
+    } catch (e) {
+      statusEl.textContent = "Couldn't generate shifts: " + e.message;
+    }
   }
 };
