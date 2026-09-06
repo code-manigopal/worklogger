@@ -14,12 +14,12 @@ const Exporter = {
 
   exportShiftsCsv() {
     const csv = CSVUtil.stringify(App.state.shifts, CONFIG.SHIFTS_HEADER);
-    this.downloadBlob("shifts.csv", csv, "text/csv");
+    this.downloadBlob(`shifts-${this._timestamp()}.csv`, csv, "text/csv");
   },
 
   exportLogsCsv() {
     const csv = CSVUtil.stringify(App.state.logs, CONFIG.LOG_HEADER);
-    this.downloadBlob("work_log.csv", csv, "text/csv");
+    this.downloadBlob(`work_log-${this._timestamp()}.csv`, csv, "text/csv");
   },
 
   exportPdf() {
@@ -63,7 +63,13 @@ const Exporter = {
       headStyles: { fillColor: [255, 194, 32], textColor: [4, 30, 66] }
     });
 
-    doc.save("work-report.pdf");
+    doc.save(`work-report-${this._timestamp()}.pdf`);
+  },
+
+  _timestamp() {
+    const now = new Date();
+    const pad = n => String(n).padStart(2, "0");
+    return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`;
   },
 
   exportAnnualPdf() {
@@ -102,6 +108,6 @@ const Exporter = {
       footStyles: { fillColor: [255, 194, 32], textColor: [4, 30, 66], fontStyle: "bold" }
     });
 
-    doc.save(`annual-summary-${year}.pdf`);
+    doc.save(`annual-summary-${year}-${this._timestamp()}.pdf`);
   }
 };
