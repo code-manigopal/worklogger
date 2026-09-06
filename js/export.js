@@ -23,6 +23,15 @@ const Exporter = {
   },
 
   exportPdf() {
+    try {
+      this._buildWorkReportPdf();
+    } catch (e) {
+      console.error(e);
+      alert("PDF export failed: " + e.message + "\n\nCheck the browser console (F12) for details.");
+    }
+  },
+
+  _buildWorkReportPdf() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     const summary = Pay.summarize(App.state.shifts, App.state.payConfig || CONFIG.DEFAULT_PAY_CONFIG);
@@ -45,7 +54,7 @@ const Exporter = {
     doc.autoTable({
       startY: 46,
       head: [["Date", "Start", "End", "Type"]],
-      body: App.state.shifts.map(s => [s.date, s.start_time, s.end_time, s.type]),
+      body: App.state.shifts.map(s => [s.date || "", s.start_time || "", s.end_time || "", s.type || ""]),
       styles: { fontSize: 9 },
       headStyles: { fillColor: [0, 113, 206] }
     });
@@ -57,7 +66,7 @@ const Exporter = {
     doc.autoTable({
       startY: afterShiftsY + 4,
       head: [["Date", "Hours", "Category", "Activities", "Notes"]],
-      body: App.state.logs.map(l => [l.date, l.hours_worked || "", l.category, l.activities, l.notes]),
+      body: App.state.logs.map(l => [l.date || "", l.hours_worked || "", l.category || "", l.activities || "", l.notes || ""]),
       styles: { fontSize: 8, cellWidth: "wrap" },
       columnStyles: { 4: { cellWidth: 60 } },
       headStyles: { fillColor: [255, 194, 32], textColor: [4, 30, 66] }
@@ -73,6 +82,15 @@ const Exporter = {
   },
 
   exportAnnualPdf() {
+    try {
+      this._buildAnnualPdf();
+    } catch (e) {
+      console.error(e);
+      alert("Annual PDF export failed: " + e.message + "\n\nCheck the browser console (F12) for details.");
+    }
+  },
+
+  _buildAnnualPdf() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     const year = new Date().getFullYear();
